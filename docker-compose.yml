@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  pylogtrail:
+    build: .
+    container_name: pylogtrail-server
+    ports:
+      - "5000:5000"   # Web UI
+      - "9999:9999"   # UDP logs
+      - "3306:3306"   # MySQL (optional, for external connections)
+    environment:
+      - PYLOGTRAIL_DATABASE_URL=mysql+pymysql://pylogtrail:pylogtrail_password@localhost:3306/pylogtrail
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Persist MySQL data
+      - mysql_data:/var/lib/mysql
+      # Persist log files (optional)
+      - log_data:/var/log/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mysql_data:
+    driver: local
+  log_data:
+    driver: local

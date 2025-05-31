@@ -217,15 +217,133 @@ Note: The standard `DatagramHandler` doesn't support metadata injection. For enh
 
 The UDP server automatically extracts client IP/port and stores them as metadata for all UDP connections.
 
-## Configuration
+## Docker Deployment
+
+PyLogTrail can be easily deployed using Docker with a built-in MySQL database.
+
+### Quick Start with Docker
+
+**Build and run with docker-compose (recommended):**
+```bash
+# Clone the repository
+git clone <repository-url>
+cd pylogtrail
+
+# Build and start the container
+docker-compose up --build
+
+# Or run in detached mode
+docker-compose up -d --build
+```
+
+**Build and run with Docker directly:**
+```bash
+# Build the image
+docker build -t pylogtrail .
+
+# Run the container
+docker run -d \
+  --name pylogtrail-server \
+  -p 5000:5000 \
+  -p 9999:9999 \
+  -v pylogtrail_mysql_data:/var/lib/mysql \
+  pylogtrail
+```
+
+### Docker Configuration
+
+The Docker container includes:
+- **Python 3.11** runtime environment
+- **MySQL 8.0** database server
+- **Automatic database initialization** on first run
+- **Persistent data storage** via Docker volumes
+- **Health checks** for service monitoring
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PYLOGTRAIL_DATABASE_URL` | `mysql+pymysql://pylogtrail:pylogtrail_password@localhost:3306/pylogtrail` | Database connection URL |
+| `PYTHONUNBUFFERED` | `1` | Ensure Python output is sent straight to terminal |
+
+### Ports
+
+| Port | Service | Description |
+|------|---------|-------------|
+| `5000` | Web UI | Access the PyLogTrail web interface |
+| `9999` | UDP Logs | Send UDP log messages |
+| `3306` | MySQL | Database connection (optional external access) |
+
+### Data Persistence
+
+The container uses Docker volumes to persist data:
+- `mysql_data`: MySQL database files
+- `log_data`: MySQL log files
+
+### Container Health
+
+The container includes health checks that verify:
+- Web UI is responding on port 5000
+- MySQL database is running
+- PyLogTrail application is healthy
+
+### First Run Setup
+
+When the container starts for the first time, it will:
+
+1. **Initialize MySQL** with a new data directory
+2. **Create the database** and user accounts
+3. **Run initialization scripts** to set up tables
+4. **Test database connectivity** 
+5. **Start PyLogTrail server** with clear configuration output
+
+All configuration details are printed during startup in a clearly formatted output showing:
+- Database connection details
+- Server ports and URLs
+- Environment information
+
+### Logs and Monitoring
+
+View container logs:
+```bash
+# Follow logs in real-time
+docker-compose logs -f pylogtrail
+
+# View recent logs
+docker logs pylogtrail-server
+```
+
+Connect to the running container:
+```bash
+docker exec -it pylogtrail-server bash
+```
+
+### Stopping the Container
+
+```bash
+# With docker-compose
+docker-compose down
+
+# With Docker directly
+docker stop pylogtrail-server
+docker rm pylogtrail-server
+```
+
+## Native Installation
+
+For development or non-Docker deployments:
+
+### Configuration
 
 - `--port`: HTTP server port (default: 5000)
 - `--udp-port`: UDP listener port (optional, disabled if not specified)
+- `--database-url`: Database URL (default: SQLite)
 
 ## Architecture
 
 - **Flask**: HTTP server with `/log` endpoint
 - **SocketIO**: WebSocket communication for real-time updates
-- **SQLite**: Log storage with SQLAlchemy ORM
+- **SQLAlchemy**: Database ORM supporting SQLite, MySQL, PostgreSQL
+- **MySQL**: Default database in Docker deployment
 - **Threading**: Background UDP listener
 - **React**: Frontend web UI (built assets served statically)
