@@ -2,6 +2,9 @@ import logging
 import logging.handlers
 from typing import Dict, Any, Optional
 import json
+import pickle
+import socket
+import struct
 
 
 class PyLogTrailHTTPHandler(logging.handlers.HTTPHandler):
@@ -151,6 +154,148 @@ class PyLogTrailContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Remove the PyLogTrail handler from the root logger when exiting the context."""
+        self.root_logger.removeHandler(self.handler)
+        self.handler.flush()
+        self.handler.close()
+
+
+class PyLogTrailUDPHandler(logging.Handler):
+    """
+    A custom UDP handler that sends log records to a PyLogTrail UDP server.
+    Supports additional metadata by adding attributes to the log record.
+    Uses the same protocol as Python's logging.handlers.DatagramHandler.
+    """
+
+    def __init__(
+        self,
+        host: str,
+        port: int = 9999,
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        """
+        Initialize the UDP handler.
+
+        Args:
+            host: The host to send logs to (e.g., 'localhost')
+            port: The port to send logs to (default: 9999)
+            metadata: Optional dictionary of metadata to include as record attributes
+        """
+        super().__init__()
+        self.host = host
+        self.port = port
+        self.metadata = metadata or {}
+        self.socket = None
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """
+        Emit a log record by sending it to the UDP server.
+        """
+        try:
+            # Add metadata to the record
+            for key, value in self.metadata.items():
+                setattr(record, key, value)
+
+            # Pickle the record
+            pickled_record = pickle.dumps(record)
+            
+            # Create the packet with length prefix (same format as DatagramHandler)
+            packet = struct.pack(">L", len(pickled_record)) + pickled_record
+            
+            # Send via UDP
+            self._send_packet(packet)
+            
+        except Exception as e:
+            self.handleError(record)
+
+    def _send_packet(self, packet: bytes) -> None:
+        """
+        Send a packet to the UDP server.
+        Creates a new socket for each send to avoid connection state issues.
+        """
+        sock = None
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto(packet, (self.host, self.port))
+        finally:
+            if sock:
+                sock.close()
+
+    def close(self) -> None:
+        """
+        Close the handler and clean up resources.
+        """
+        super().close()
+
+
+def create_udp_handler(
+    host: str,
+    port: int = 9999,
+    metadata: Optional[Dict[str, Any]] = None,
+    level: int = logging.NOTSET,
+) -> PyLogTrailUDPHandler:
+    """
+    Create and configure a PyLogTrail UDP handler.
+
+    Args:
+        host: The host to send logs to (e.g., 'localhost')
+        port: The port to send logs to (default: 9999)
+        metadata: Optional dictionary of metadata to include as record attributes
+        level: The logging level for this handler (default: NOTSET)
+
+    Returns:
+        A configured PyLogTrailUDPHandler instance
+    """
+    handler = PyLogTrailUDPHandler(
+        host=host,
+        port=port,
+        metadata=metadata,
+    )
+    handler.setLevel(level)
+    return handler
+
+
+class PyLogTrailUDPContext:
+    """
+    A context manager that temporarily adds a PyLogTrail UDP handler to the root logger.
+    The handler is automatically removed when exiting the context.
+
+    Example:
+        with PyLogTrailUDPContext('localhost', metadata={'app': 'myapp'}):
+            # All logging during this block will be sent to the PyLogTrail UDP server
+            logging.info('This will be sent to PyLogTrail via UDP')
+    """
+
+    def __init__(
+        self,
+        host: str,
+        port: int = 9999,
+        metadata: Optional[Dict[str, Any]] = None,
+        level: int = logging.NOTSET,
+    ):
+        """
+        Initialize the UDP context logger.
+
+        Args:
+            host: The host to send logs to (e.g., 'localhost')
+            port: The port to send logs to (default: 9999)
+            metadata: Optional dictionary of metadata to include as record attributes
+            level: The logging level for this handler (default: NOTSET)
+        """
+        self.handler = create_udp_handler(
+            host=host,
+            port=port,
+            metadata=metadata,
+            level=level,
+        )
+        self.root_logger = logging.root
+
+    def __enter__(self) -> None:
+        """Add the PyLogTrail UDP handler to the root logger when entering the context."""
+        self.root_logger.addHandler(self.handler)
+        return None
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Remove the PyLogTrail UDP handler from the root logger when exiting the context."""
         self.root_logger.removeHandler(self.handler)
         self.handler.flush()
         self.handler.close()
