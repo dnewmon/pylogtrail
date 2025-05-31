@@ -13,6 +13,7 @@ from pylogtrail.client.handlers import (
     PyLogTrailHTTPHandler,
     create_http_handler,
     PyLogTrailContext,
+    PyLogTrailHTTPContext,
     PyLogTrailUDPHandler,
     create_udp_handler,
     PyLogTrailUDPContext,
@@ -207,13 +208,72 @@ class TestCreateHttpHandler:
 
 
 class TestPyLogTrailContext:
-    """Test cases for PyLogTrailContext class."""
+    """Test cases for generic PyLogTrailContext base class."""
+
+    def test_init_with_handler(self):
+        """Test base context manager initialization with handler."""
+        handler = PyLogTrailHTTPHandler("localhost:5000")
+        context = PyLogTrailContext(handler)
+        
+        assert context.handler is handler
+        assert context.logger is logging.root
+
+    def test_init_with_custom_logger(self):
+        """Test base context manager initialization with custom logger."""
+        handler = PyLogTrailHTTPHandler("localhost:5000")
+        custom_logger = logging.getLogger("test.logger")
+        context = PyLogTrailContext(handler, custom_logger)
+        
+        assert context.handler is handler
+        assert context.logger is custom_logger
+
+    def test_enter_adds_handler(self):
+        """Test that entering context adds handler to logger."""
+        handler = PyLogTrailHTTPHandler("localhost:5000")
+        custom_logger = logging.getLogger("test.context")
+        context = PyLogTrailContext(handler, custom_logger)
+        
+        # Verify handler is not in logger initially
+        assert handler not in custom_logger.handlers
+        
+        # Enter context
+        context.__enter__()
+        
+        # Verify handler is added to logger
+        assert handler in custom_logger.handlers
+        
+        # Clean up
+        context.__exit__(None, None, None)
+
+    def test_exit_removes_handler(self):
+        """Test that exiting context removes handler from logger."""
+        handler = PyLogTrailHTTPHandler("localhost:5000")
+        custom_logger = logging.getLogger("test.context2")
+        context = PyLogTrailContext(handler, custom_logger)
+        
+        # Enter and then exit context
+        context.__enter__()
+        assert handler in custom_logger.handlers
+        
+        with patch.object(handler, 'flush') as mock_flush, \
+             patch.object(handler, 'close') as mock_close:
+            
+            context.__exit__(None, None, None)
+            
+            # Verify handler is removed and cleaned up
+            assert handler not in custom_logger.handlers
+            mock_flush.assert_called_once()
+            mock_close.assert_called_once()
+
+
+class TestPyLogTrailHTTPContext:
+    """Test cases for PyLogTrailHTTPContext class."""
 
     def test_init(self):
-        """Test context manager initialization."""
+        """Test HTTP context manager initialization."""
         metadata = {"app": "test"}
         
-        context = PyLogTrailContext(
+        context = PyLogTrailHTTPContext(
             host="localhost:5000",
             url="/api/log",
             metadata=metadata,
@@ -227,11 +287,18 @@ class TestPyLogTrailContext:
         assert context.handler.metadata == metadata
         assert context.handler.secure is True
         assert context.handler.level == logging.DEBUG
-        assert context.root_logger is logging.root
+        assert context.logger is logging.root
+
+    def test_init_with_custom_logger(self):
+        """Test HTTP context manager with custom logger."""
+        custom_logger = logging.getLogger("test.http")
+        context = PyLogTrailHTTPContext("localhost:5000", logger=custom_logger)
+        
+        assert context.logger is custom_logger
 
     def test_enter_adds_handler(self):
-        """Test that entering context adds handler to root logger."""
-        context = PyLogTrailContext("localhost:5000")
+        """Test that entering context adds handler to logger."""
+        context = PyLogTrailHTTPContext("localhost:5000")
         
         # Verify handler is not in root logger initially
         assert context.handler not in logging.root.handlers
@@ -245,32 +312,14 @@ class TestPyLogTrailContext:
         # Clean up
         context.__exit__(None, None, None)
 
-    def test_exit_removes_handler(self):
-        """Test that exiting context removes handler from root logger."""
-        context = PyLogTrailContext("localhost:5000")
-        
-        # Enter and then exit context
-        context.__enter__()
-        assert context.handler in logging.root.handlers
-        
-        with patch.object(context.handler, 'flush') as mock_flush, \
-             patch.object(context.handler, 'close') as mock_close:
-            
-            context.__exit__(None, None, None)
-            
-            # Verify handler is removed and cleaned up
-            assert context.handler not in logging.root.handlers
-            mock_flush.assert_called_once()
-            mock_close.assert_called_once()
-
     def test_context_manager_usage(self):
-        """Test using context manager with 'with' statement."""
+        """Test using HTTP context manager with 'with' statement."""
         metadata = {"test": "value"}
         
         with patch.object(logging.root, 'addHandler') as mock_add, \
              patch.object(logging.root, 'removeHandler') as mock_remove:
             
-            with PyLogTrailContext("localhost:5000", metadata=metadata) as ctx:
+            with PyLogTrailHTTPContext("localhost:5000", metadata=metadata) as ctx:
                 # Verify handler was added
                 mock_add.assert_called_once()
                 handler = mock_add.call_args[0][0]
@@ -281,12 +330,12 @@ class TestPyLogTrailContext:
             mock_remove.assert_called_once()
 
     def test_context_manager_with_exception(self):
-        """Test context manager properly cleans up when exception occurs."""
+        """Test HTTP context manager properly cleans up when exception occurs."""
         with patch.object(logging.root, 'addHandler'), \
              patch.object(logging.root, 'removeHandler') as mock_remove:
             
             try:
-                with PyLogTrailContext("localhost:5000"):
+                with PyLogTrailHTTPContext("localhost:5000"):
                     raise ValueError("Test exception")
             except ValueError:
                 pass
@@ -295,8 +344,8 @@ class TestPyLogTrailContext:
             mock_remove.assert_called_once()
 
     def test_enter_returns_none(self):
-        """Test that __enter__ returns None."""
-        context = PyLogTrailContext("localhost:5000")
+        """Test that HTTP context __enter__ returns None."""
+        context = PyLogTrailHTTPContext("localhost:5000")
         result = context.__enter__()
         
         assert result is None
@@ -454,7 +503,14 @@ class TestPyLogTrailUDPContext:
         assert context.handler.port == 8888
         assert context.handler.metadata == metadata
         assert context.handler.level == logging.DEBUG
-        assert context.root_logger is logging.root
+        assert context.logger is logging.root
+
+    def test_init_with_custom_logger(self):
+        """Test UDP context manager with custom logger."""
+        custom_logger = logging.getLogger("test.udp")
+        context = PyLogTrailUDPContext("localhost", logger=custom_logger)
+        
+        assert context.logger is custom_logger
 
     def test_enter_adds_handler(self):
         """Test that entering context adds handler to root logger."""
