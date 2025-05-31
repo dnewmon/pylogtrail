@@ -24,6 +24,12 @@ wheels/
 node_modules/
 npm-debug.log*
 
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
 # IDE
 .idea/
 .vscode/
