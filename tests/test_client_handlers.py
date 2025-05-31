@@ -13,6 +13,10 @@ from pylogtrail.client.handlers import (
     PyLogTrailHTTPHandler,
     create_http_handler,
     PyLogTrailContext,
+    PyLogTrailHTTPContext,
+    PyLogTrailUDPHandler,
+    create_udp_handler,
+    PyLogTrailUDPContext,
 )
 
 
@@ -204,13 +208,72 @@ class TestCreateHttpHandler:
 
 
 class TestPyLogTrailContext:
-    """Test cases for PyLogTrailContext class."""
+    """Test cases for generic PyLogTrailContext base class."""
+
+    def test_init_with_handler(self):
+        """Test base context manager initialization with handler."""
+        handler = PyLogTrailHTTPHandler("localhost:5000")
+        context = PyLogTrailContext(handler)
+        
+        assert context.handler is handler
+        assert context.logger is logging.root
+
+    def test_init_with_custom_logger(self):
+        """Test base context manager initialization with custom logger."""
+        handler = PyLogTrailHTTPHandler("localhost:5000")
+        custom_logger = logging.getLogger("test.logger")
+        context = PyLogTrailContext(handler, custom_logger)
+        
+        assert context.handler is handler
+        assert context.logger is custom_logger
+
+    def test_enter_adds_handler(self):
+        """Test that entering context adds handler to logger."""
+        handler = PyLogTrailHTTPHandler("localhost:5000")
+        custom_logger = logging.getLogger("test.context")
+        context = PyLogTrailContext(handler, custom_logger)
+        
+        # Verify handler is not in logger initially
+        assert handler not in custom_logger.handlers
+        
+        # Enter context
+        context.__enter__()
+        
+        # Verify handler is added to logger
+        assert handler in custom_logger.handlers
+        
+        # Clean up
+        context.__exit__(None, None, None)
+
+    def test_exit_removes_handler(self):
+        """Test that exiting context removes handler from logger."""
+        handler = PyLogTrailHTTPHandler("localhost:5000")
+        custom_logger = logging.getLogger("test.context2")
+        context = PyLogTrailContext(handler, custom_logger)
+        
+        # Enter and then exit context
+        context.__enter__()
+        assert handler in custom_logger.handlers
+        
+        with patch.object(handler, 'flush') as mock_flush, \
+             patch.object(handler, 'close') as mock_close:
+            
+            context.__exit__(None, None, None)
+            
+            # Verify handler is removed and cleaned up
+            assert handler not in custom_logger.handlers
+            mock_flush.assert_called_once()
+            mock_close.assert_called_once()
+
+
+class TestPyLogTrailHTTPContext:
+    """Test cases for PyLogTrailHTTPContext class."""
 
     def test_init(self):
-        """Test context manager initialization."""
+        """Test HTTP context manager initialization."""
         metadata = {"app": "test"}
         
-        context = PyLogTrailContext(
+        context = PyLogTrailHTTPContext(
             host="localhost:5000",
             url="/api/log",
             metadata=metadata,
@@ -224,11 +287,234 @@ class TestPyLogTrailContext:
         assert context.handler.metadata == metadata
         assert context.handler.secure is True
         assert context.handler.level == logging.DEBUG
-        assert context.root_logger is logging.root
+        assert context.logger is logging.root
+
+    def test_init_with_custom_logger(self):
+        """Test HTTP context manager with custom logger."""
+        custom_logger = logging.getLogger("test.http")
+        context = PyLogTrailHTTPContext("localhost:5000", logger=custom_logger)
+        
+        assert context.logger is custom_logger
+
+    def test_enter_adds_handler(self):
+        """Test that entering context adds handler to logger."""
+        context = PyLogTrailHTTPContext("localhost:5000")
+        
+        # Verify handler is not in root logger initially
+        assert context.handler not in logging.root.handlers
+        
+        # Enter context
+        context.__enter__()
+        
+        # Verify handler is added to root logger
+        assert context.handler in logging.root.handlers
+        
+        # Clean up
+        context.__exit__(None, None, None)
+
+    def test_context_manager_usage(self):
+        """Test using HTTP context manager with 'with' statement."""
+        metadata = {"test": "value"}
+        
+        with patch.object(logging.root, 'addHandler') as mock_add, \
+             patch.object(logging.root, 'removeHandler') as mock_remove:
+            
+            with PyLogTrailHTTPContext("localhost:5000", metadata=metadata) as ctx:
+                # Verify handler was added
+                mock_add.assert_called_once()
+                handler = mock_add.call_args[0][0]
+                assert isinstance(handler, PyLogTrailHTTPHandler)
+                assert handler.metadata == metadata
+            
+            # Verify handler was removed
+            mock_remove.assert_called_once()
+
+    def test_context_manager_with_exception(self):
+        """Test HTTP context manager properly cleans up when exception occurs."""
+        with patch.object(logging.root, 'addHandler'), \
+             patch.object(logging.root, 'removeHandler') as mock_remove:
+            
+            try:
+                with PyLogTrailHTTPContext("localhost:5000"):
+                    raise ValueError("Test exception")
+            except ValueError:
+                pass
+            
+            # Verify handler was still removed despite exception
+            mock_remove.assert_called_once()
+
+    def test_enter_returns_none(self):
+        """Test that HTTP context __enter__ returns None."""
+        context = PyLogTrailHTTPContext("localhost:5000")
+        result = context.__enter__()
+        
+        assert result is None
+        
+        # Clean up
+        context.__exit__(None, None, None)
+
+
+class TestPyLogTrailUDPHandler:
+    """Test cases for PyLogTrailUDPHandler class."""
+
+    def test_init_default_values(self):
+        """Test UDP handler initialization with default values."""
+        handler = PyLogTrailUDPHandler("localhost")
+        
+        assert handler.host == "localhost"
+        assert handler.port == 9999
+        assert handler.metadata == {}
+
+    def test_init_custom_values(self):
+        """Test UDP handler initialization with custom values."""
+        metadata = {"app": "test", "version": "1.0"}
+        
+        handler = PyLogTrailUDPHandler(
+            host="example.com",
+            port=8888,
+            metadata=metadata,
+        )
+        
+        assert handler.host == "example.com"
+        assert handler.port == 8888
+        assert handler.metadata == metadata
+
+    @patch('pylogtrail.client.handlers.socket.socket')
+    @patch('pylogtrail.client.handlers.pickle.dumps')
+    @patch('pylogtrail.client.handlers.struct.pack')
+    def test_emit_success(self, mock_pack, mock_dumps, mock_socket):
+        """Test successful log record emission."""
+        # Setup mocks
+        mock_sock_instance = Mock()
+        mock_socket.return_value = mock_sock_instance
+        mock_dumps.return_value = b'pickled_record'
+        mock_pack.return_value = b'\x00\x00\x00\x0e'  # 4-byte length prefix
+        
+        metadata = {"app": "test"}
+        handler = PyLogTrailUDPHandler("localhost", port=9999, metadata=metadata)
+        
+        # Create log record
+        record = logging.LogRecord(
+            name="test.logger",
+            level=logging.INFO,
+            pathname="/path/to/file.py",
+            lineno=42,
+            msg="Test message",
+            args=(),
+            exc_info=None,
+        )
+        
+        # Emit the record
+        handler.emit(record)
+        
+        # Verify metadata was added to record
+        assert hasattr(record, 'app')
+        assert record.app == "test"
+        
+        # Verify socket operations
+        mock_socket.assert_called_once_with(unittest.mock.ANY, unittest.mock.ANY)
+        mock_sock_instance.sendto.assert_called_once_with(
+            b'\x00\x00\x00\x0epickled_record', 
+            ('localhost', 9999)
+        )
+        mock_sock_instance.close.assert_called_once()
+
+    @patch('pylogtrail.client.handlers.socket.socket')
+    def test_emit_socket_error(self, mock_socket):
+        """Test emit handles socket errors gracefully."""
+        # Setup mock to raise an exception
+        mock_sock_instance = Mock()
+        mock_sock_instance.sendto.side_effect = OSError("Connection refused")
+        mock_socket.return_value = mock_sock_instance
+        
+        handler = PyLogTrailUDPHandler("localhost")
+        
+        # Create log record
+        record = logging.LogRecord(
+            name="test.logger",
+            level=logging.INFO,
+            pathname="/path/to/file.py",
+            lineno=42,
+            msg="Test message",
+            args=(),
+            exc_info=None,
+        )
+        
+        # Emit should not raise exception
+        with patch.object(handler, 'handleError') as mock_handle_error:
+            handler.emit(record)
+            mock_handle_error.assert_called_once_with(record)
+
+    def test_close(self):
+        """Test handler close method."""
+        handler = PyLogTrailUDPHandler("localhost")
+        
+        # Should not raise any exceptions
+        handler.close()
+
+
+class TestCreateUdpHandler:
+    """Test cases for create_udp_handler function."""
+
+    def test_create_with_defaults(self):
+        """Test creating UDP handler with default values."""
+        handler = create_udp_handler("localhost")
+        
+        assert isinstance(handler, PyLogTrailUDPHandler)
+        assert handler.host == "localhost"
+        assert handler.port == 9999
+        assert handler.metadata == {}
+        assert handler.level == logging.NOTSET
+
+    def test_create_with_custom_values(self):
+        """Test creating UDP handler with custom values."""
+        metadata = {"service": "api"}
+        
+        handler = create_udp_handler(
+            host="api.example.com",
+            port=8888,
+            metadata=metadata,
+            level=logging.WARNING,
+        )
+        
+        assert isinstance(handler, PyLogTrailUDPHandler)
+        assert handler.host == "api.example.com"
+        assert handler.port == 8888
+        assert handler.metadata == metadata
+        assert handler.level == logging.WARNING
+
+
+class TestPyLogTrailUDPContext:
+    """Test cases for PyLogTrailUDPContext class."""
+
+    def test_init(self):
+        """Test UDP context manager initialization."""
+        metadata = {"app": "test"}
+        
+        context = PyLogTrailUDPContext(
+            host="localhost",
+            port=8888,
+            metadata=metadata,
+            level=logging.DEBUG,
+        )
+        
+        assert isinstance(context.handler, PyLogTrailUDPHandler)
+        assert context.handler.host == "localhost"
+        assert context.handler.port == 8888
+        assert context.handler.metadata == metadata
+        assert context.handler.level == logging.DEBUG
+        assert context.logger is logging.root
+
+    def test_init_with_custom_logger(self):
+        """Test UDP context manager with custom logger."""
+        custom_logger = logging.getLogger("test.udp")
+        context = PyLogTrailUDPContext("localhost", logger=custom_logger)
+        
+        assert context.logger is custom_logger
 
     def test_enter_adds_handler(self):
         """Test that entering context adds handler to root logger."""
-        context = PyLogTrailContext("localhost:5000")
+        context = PyLogTrailUDPContext("localhost")
         
         # Verify handler is not in root logger initially
         assert context.handler not in logging.root.handlers
@@ -244,7 +530,7 @@ class TestPyLogTrailContext:
 
     def test_exit_removes_handler(self):
         """Test that exiting context removes handler from root logger."""
-        context = PyLogTrailContext("localhost:5000")
+        context = PyLogTrailUDPContext("localhost")
         
         # Enter and then exit context
         context.__enter__()
@@ -261,39 +547,25 @@ class TestPyLogTrailContext:
             mock_close.assert_called_once()
 
     def test_context_manager_usage(self):
-        """Test using context manager with 'with' statement."""
+        """Test using UDP context manager with 'with' statement."""
         metadata = {"test": "value"}
         
         with patch.object(logging.root, 'addHandler') as mock_add, \
              patch.object(logging.root, 'removeHandler') as mock_remove:
             
-            with PyLogTrailContext("localhost:5000", metadata=metadata) as ctx:
+            with PyLogTrailUDPContext("localhost", metadata=metadata) as ctx:
                 # Verify handler was added
                 mock_add.assert_called_once()
                 handler = mock_add.call_args[0][0]
-                assert isinstance(handler, PyLogTrailHTTPHandler)
+                assert isinstance(handler, PyLogTrailUDPHandler)
                 assert handler.metadata == metadata
             
             # Verify handler was removed
             mock_remove.assert_called_once()
 
-    def test_context_manager_with_exception(self):
-        """Test context manager properly cleans up when exception occurs."""
-        with patch.object(logging.root, 'addHandler'), \
-             patch.object(logging.root, 'removeHandler') as mock_remove:
-            
-            try:
-                with PyLogTrailContext("localhost:5000"):
-                    raise ValueError("Test exception")
-            except ValueError:
-                pass
-            
-            # Verify handler was still removed despite exception
-            mock_remove.assert_called_once()
-
     def test_enter_returns_none(self):
-        """Test that __enter__ returns None."""
-        context = PyLogTrailContext("localhost:5000")
+        """Test that UDP context __enter__ returns None."""
+        context = PyLogTrailUDPContext("localhost")
         result = context.__enter__()
         
         assert result is None
