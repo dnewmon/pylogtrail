@@ -1,0 +1,34 @@
+[mysqld]
+# Basic settings
+datadir = /var/lib/mysql
+socket = /var/run/mysqld/mysqld.sock
+user = mysql
+pid-file = /var/run/mysqld/mysqld.pid
+
+# Network settings
+bind-address = 0.0.0.0
+port = 3306
+
+# Character set and collation
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+
+# Performance settings
+max_connections = 200
+innodb_buffer_pool_size = 128M
+innodb_log_file_size = 50M
+
+# Security settings
+skip-name-resolve
+
+# Logging
+general_log = 0
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+
+[mysql]
+default-character-set = utf8mb4
+
+[client]
+default-character-set = utf8mb4
