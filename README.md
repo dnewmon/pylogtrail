@@ -7,13 +7,20 @@ PyLogTrail is a lightweight log aggregation server that accepts Python log recor
 
 ## Features
 
-- **HTTP Log Endpoint**: Accept log records via POST requests to `/log`
-- **UDP Log Handler**: Accept pickled log records from Python's `DatagramHandler`
+- **Python HTTP Handler**: Built-in logging handler for seamless integration
+- **UDP Log Handler**: Accept pickled log records from Python's `DatagramHandler`  
 - **Real-time Web UI**: WebSocket-based interface for live log streaming
 - **SQLite Storage**: Persistent log storage with structured data
-- **Multiple Input Formats**: Support for JSON and form-encoded log data
-- **Metadata Support**: Extract and store custom metadata from logs
+- **Multiple Client Options**: HTTP handler, context manager, and direct UDP support
+- **Metadata Support**: Add custom metadata to logs via handler configuration
 - **Filtering & Search**: Web UI with filtering capabilities
+
+## Installation
+
+Install PyLogTrail:
+```bash
+pip install pylogtrail
+```
 
 ## Quick Start
 
@@ -26,39 +33,74 @@ Access the web UI at `http://localhost:5000`
 
 ## Log Ingestion
 
-### HTTP Endpoint (`/log`)
+### Python HTTP Handler
 
-Send log records via POST to `/log`. Supports both JSON and form-encoded data:
+The recommended way to send logs to PyLogTrail is using the provided Python HTTP handler:
 
-**JSON Format:**
-```bash
-curl -X POST http://localhost:5000/log \
-  -H "Content-Type: application/json" \
-  -d '{
-    "levelname": "INFO",
-    "name": "myapp.module",
-    "msg": "User login successful",
-    "created": 1672531200.123,
-    "pathname": "/app/auth.py",
-    "lineno": 42,
-    "custom_field": "custom_value"
-  }'
+**Basic Usage:**
+```python
+import logging
+from pylogtrail.client import create_http_handler
+
+# Create and configure the handler
+handler = create_http_handler(
+    host='localhost:5000',
+    metadata={'service': 'myapp', 'version': '1.2.3'}
+)
+
+# Add to your logger
+logger = logging.getLogger('myapp')
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+# Send logs normally
+logger.info("User login successful")
+logger.error("Database connection failed")
 ```
 
-**Form-encoded Format:**
-```bash
-curl -X POST http://localhost:5000/log \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "levelname=ERROR&name=myapp&msg=Database connection failed&created=1672531200"
+**Using the Handler Class Directly:**
+```python
+import logging
+from pylogtrail.client import PyLogTrailHTTPHandler
+
+# Create handler with advanced options
+handler = PyLogTrailHTTPHandler(
+    host='localhost:5000',
+    url='/log',
+    metadata={'app': 'myservice'},
+    secure=False,  # Set to True for HTTPS
+    credentials=('username', 'password')  # Optional basic auth
+)
+
+logger = logging.getLogger('myapp')
+logger.addHandler(handler)
+logger.info("This log will be sent to PyLogTrail")
 ```
 
-**URL Parameters:**
-Add metadata via query parameters:
-```bash
-curl -X POST "http://localhost:5000/log?service=auth&version=1.2.3" \
-  -H "Content-Type: application/json" \
-  -d '{"levelname": "INFO", "msg": "Service started"}'
+**Context Manager (Temporary Logging):**
+```python
+import logging
+from pylogtrail.client.handlers import PyLogTrailContext
+
+# Temporarily send all logs to PyLogTrail
+with PyLogTrailContext('localhost:5000', metadata={'session': 'temp'}):
+    logging.info('This will be sent to PyLogTrail')
+    logging.error('So will this error')
+# Handler is automatically removed after the context
 ```
+
+**Available Client Handlers:**
+
+- `create_http_handler()`: Helper function to quickly create a configured handler
+- `PyLogTrailHTTPHandler`: Full-featured HTTP handler class with all options
+- `PyLogTrailContext`: Context manager for temporary logging to PyLogTrail
+
+All handlers support:
+- Custom metadata injection
+- HTTPS connections with SSL context
+- Basic authentication
+- Automatic log record formatting
+- Error handling and retries
 
 ### UDP Socket
 
