@@ -8,6 +8,9 @@ from pylogtrail.db.session import init_db
 from pylogtrail.server.udp_handler import UDPLogHandler
 from pylogtrail.server.http_handler import create_log_endpoint
 from pylogtrail.server.socketio import init_socketio, broadcast_log
+from pylogtrail.server.retention_api import retention_bp
+from pylogtrail.retention.manager import RetentionManager
+from pylogtrail.config.retention import get_retention_config_manager
 
 app = Flask(
     __name__,
@@ -61,9 +64,26 @@ def create_app(config: Optional[Dict[str, Any]] = None, udp_port: Optional[int] 
     # Initialize database on startup
     with app.app_context():
         init_db()
+        
+        # Run retention cleanup on startup if configured
+        try:
+            config_manager = get_retention_config_manager()
+            config = config_manager.get_config()
+            if config.schedule.on_startup:
+                retention_manager = RetentionManager(config_manager)
+                result = retention_manager.cleanup_logs()
+                if result['records_deleted'] > 0:
+                    logger.info(f"Startup cleanup: deleted {result['records_deleted']} log records")
+                    if result['export_file']:
+                        logger.info(f"Exported deleted records to: {result['export_file']}")
+        except Exception as e:
+            logger.error(f"Error during startup retention cleanup: {e}")
 
     # Register the log endpoint with dependency injection
     app.add_url_rule("/log", "log_endpoint", create_log_endpoint(broadcast_log), methods=["POST"])
+    
+    # Register retention API blueprint
+    app.register_blueprint(retention_bp)
 
     # Start UDP handler if port is specified
     if udp_port is not None:
