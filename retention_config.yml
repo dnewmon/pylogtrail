@@ -1,0 +1,33 @@
+# PyLogTrail Data Retention Configuration
+# This file controls how log data is automatically cleaned up
+
+retention:
+  # Time-based retention: Keep logs for this amount of time
+  # Format: XdYhZm (X days, Y hours, Z minutes) or just specify one unit
+  # Examples: "7d", "2d12h", "30d", "1h30m"
+  time_based:
+    enabled: true
+    duration: "7d"  # Default: 1 week
+  
+  # Count-based retention: Keep only this many most recent log entries
+  # If both time and count limits are enabled, whichever limit is reached first will trigger cleanup
+  count_based:
+    enabled: false
+    max_entries: 10000  # Default: 10,000 entries
+  
+  # Export settings for records marked for deletion
+  export:
+    enabled: true
+    # Export deleted records to CSV files in a ZIP archive
+    format: "csv_zip"
+    # Where to save export files (relative to project root)
+    output_directory: "exports"
+    # Include timestamp in export filename
+    include_timestamp: true
+  
+  # Cleanup schedule (when retention cleanup should run)
+  schedule:
+    # Run cleanup automatically on server startup
+    on_startup: true
+    # Run cleanup every X hours (0 to disable periodic cleanup)
+    interval_hours: 24  # Run daily
