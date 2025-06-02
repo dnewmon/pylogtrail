@@ -6,7 +6,7 @@ services:
     container_name: pylogtrail-server
     ports:
       - "5000:5000"   # Web UI
-      - "9999:9999"   # UDP logs
+      - "9999:9999/udp"   # UDP logs
       - "3306:3306"   # MySQL (optional, for external connections)
     environment:
       - PYLOGTRAIL_DATABASE_URL=mysql+pymysql://pylogtrail:pylogtrail_password@localhost:3306/pylogtrail

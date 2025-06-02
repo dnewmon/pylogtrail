@@ -5,6 +5,9 @@ from typing import Generator
 from functools import cache
 import os
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @cache
@@ -43,6 +46,7 @@ def get_database_url() -> str:
 
 def create_db_engine():
     """Create SQLAlchemy engine with appropriate settings"""
+    logger.info(f"Creating database engine with URL: {get_database_url()}")
     return create_engine(
         get_database_url(),
         pool_size=5,

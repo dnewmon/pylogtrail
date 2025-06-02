@@ -60,7 +60,7 @@ export const defaultColumns: Column[] = [
 ];
 
 export const messageColumn: Column = {
-    key: "message",
+    key: "msg",
     label: "Message",
     visible: true,
     render: (value: string) => (
@@ -147,7 +147,7 @@ export default function LogTable({ logEntries, columns, filters }: TableProps) {
                             className="hover:bg-gray-100 border-t border-t-gray-200"
                         >
                             {columns.map(column => renderCell(column, entry[column.key]))}
-                            {renderCell(messageColumn, entry.message)}
+                            {renderCell(messageColumn, entry.msg)}
                         </tr>
                     ))}
                 </tbody>

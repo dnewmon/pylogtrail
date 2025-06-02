@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -46,7 +46,7 @@ RUN mkdir -p /var/lib/mysql
 RUN chown -R mysql:mysql /var/lib/mysql
 
 # Expose ports
-EXPOSE 5000 9999 3306
+EXPOSE 5000 9999/udp 3306
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
