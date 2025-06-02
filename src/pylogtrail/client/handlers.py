@@ -57,18 +57,13 @@ class PyLogTrailHTTPHandler(logging.handlers.HTTPHandler):
             "funcName": record.funcName,
         }
 
-        print(json.dumps(data, indent=2))
-
         # Add any additional attributes from the record
         for key, value in record.__dict__.items():
             if key not in data and not key.startswith("_"):
-                print(key, type(value))
                 data[key] = value
 
         # Add metadata to the JSON payload
         data.update(self.metadata)
-
-        print(json.dumps(data, indent=2))
 
         return data
 

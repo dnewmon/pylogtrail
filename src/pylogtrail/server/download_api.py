@@ -34,50 +34,56 @@ def parse_timeframe(timeframe: str) -> Optional[datetime]:
     if not timeframe:
         return None
         
-    timeframe = timeframe.lower().strip()
+    timeframe = timeframe.strip()
     now = datetime.now(timezone.utc)
     
     try:
         # Try parsing as ISO format first
         if 'T' in timeframe or '-' in timeframe:
-            dt = datetime.fromisoformat(timeframe.replace('Z', '+00:00'))
+            # Handle different ISO format variations
+            iso_string = timeframe
+            if iso_string.endswith('Z'):
+                iso_string = iso_string[:-1] + '+00:00'
+            
+            dt = datetime.fromisoformat(iso_string)
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             return dt
     except (ValueError, TypeError):
         pass
     
-    # Parse relative time formats
-    if timeframe.endswith(('d', 'day', 'days')):
+    # Parse relative time formats (convert to lowercase for pattern matching)
+    timeframe_lower = timeframe.lower()
+    if timeframe_lower.endswith(('d', 'day', 'days')):
         # Extract number of days
-        num_str = timeframe.rstrip('days').rstrip('day').rstrip('d')
+        num_str = timeframe_lower.rstrip('days').rstrip('day').rstrip('d')
         try:
             days = int(num_str)
             return now - timedelta(days=days)
         except ValueError:
             pass
     
-    elif timeframe.endswith(('w', 'week', 'weeks')):
+    elif timeframe_lower.endswith(('w', 'week', 'weeks')):
         # Extract number of weeks
-        num_str = timeframe.rstrip('weeks').rstrip('week').rstrip('w')
+        num_str = timeframe_lower.rstrip('weeks').rstrip('week').rstrip('w')
         try:
             weeks = int(num_str)
             return now - timedelta(weeks=weeks)
         except ValueError:
             pass
     
-    elif timeframe.endswith(('m', 'month', 'months')):
+    elif timeframe_lower.endswith(('m', 'month', 'months')):
         # Extract number of months (approximate as 30 days each)
-        num_str = timeframe.rstrip('months').rstrip('month').rstrip('m')
+        num_str = timeframe_lower.rstrip('months').rstrip('month').rstrip('m')
         try:
             months = int(num_str)
             return now - timedelta(days=months * 30)
         except ValueError:
             pass
     
-    elif timeframe.endswith(('h', 'hour', 'hours')):
+    elif timeframe_lower.endswith(('h', 'hour', 'hours')):
         # Extract number of hours
-        num_str = timeframe.rstrip('hours').rstrip('hour').rstrip('h')
+        num_str = timeframe_lower.rstrip('hours').rstrip('hour').rstrip('h')
         try:
             hours = int(num_str)
             return now - timedelta(hours=hours)
