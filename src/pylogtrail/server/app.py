@@ -206,7 +206,7 @@ def main():
     
     try:
         from pylogtrail.server.socketio import socketio
-        socketio.run(app, host="0.0.0.0", port=args.port)
+        socketio.run(app, host="0.0.0.0", port=args.port, allow_unsafe_werkzeug=True)
     finally:
         # Cleanup UDP handler on shutdown
         global udp_handler, retention_stop_event, retention_thread

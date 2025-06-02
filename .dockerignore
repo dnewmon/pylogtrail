@@ -24,9 +24,7 @@ venv/
 .pytest_cache/
 
 # Documentation
-README.md
 docs/
-*.md
 
 # IDE
 .vscode/

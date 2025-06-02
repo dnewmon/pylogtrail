@@ -136,11 +136,12 @@ test_db_connection() {
     # Test PyLogTrail database initialization
     log "Testing PyLogTrail database initialization..."
     cd /app
-    python -c "from pylogtrail.db.session import init_db; init_db()" 2>/dev/null
-    if [ $? -eq 0 ]; then
+    export PYTHONPATH="/app/src:$PYTHONPATH"
+    if python -c "from pylogtrail.db.session import init_db; init_db()" 2>&1; then
         log_success "PyLogTrail database tables created successfully"
     else
         log_error "Failed to create PyLogTrail database tables"
+        python -c "from pylogtrail.db.session import init_db; init_db()" || true
         exit 1
     fi
 }
@@ -159,6 +160,7 @@ start_pylogtrail() {
     
     # Change to app directory and start the server
     cd /app
+    export PYTHONPATH="/app/src:$PYTHONPATH"
     exec "$@"
 }
 

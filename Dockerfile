@@ -15,11 +15,13 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --no-cache-dir --upgrade pip
+
 # Create app directory
 WORKDIR /app
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt pyproject.toml ./
+COPY requirements.txt pyproject.toml README.md ./
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -e .
 
