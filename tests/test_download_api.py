@@ -163,7 +163,7 @@ class TestLogsToCSV:
     
     def test_basic_logs(self):
         """Test CSV conversion with basic log entries."""
-        timestamp = datetime.now().timestamp()
+        timestamp = datetime.now(timezone.utc).timestamp()
         logs = [
             LogEntry(
                 id=1,
@@ -174,6 +174,8 @@ class TestLogsToCSV:
                 pathname="/path/to/file.py",
                 lineno=42,
                 func="test_function",
+                args=None,
+                exc_info=None,
                 extra_metadata=None
             )
         ]
@@ -198,7 +200,7 @@ class TestLogsToCSV:
     
     def test_logs_with_metadata(self):
         """Test CSV conversion with metadata."""
-        timestamp = datetime.now().timestamp()
+        timestamp = datetime.now(timezone.utc).timestamp()
         logs = [
             LogEntry(
                 id=1,
@@ -206,6 +208,11 @@ class TestLogsToCSV:
                 name="test.logger",
                 level=LogLevel.ERROR,
                 msg="Error message",
+                args=None,
+                exc_info=None,
+                pathname=None,
+                lineno=None,
+                func=None,
                 extra_metadata={
                     "service": "web",
                     "environment": {"type": "prod", "region": "us-east-1"},
@@ -218,6 +225,11 @@ class TestLogsToCSV:
                 name="test.api",
                 level=LogLevel.INFO,
                 msg="API call",
+                args=None,
+                exc_info=None,
+                pathname=None,
+                lineno=None,
+                func=None,
                 extra_metadata={
                     "service": "api",
                     "user_id": 12345
@@ -245,7 +257,7 @@ class TestLogsToCSV:
     
     def test_logs_with_args_and_exc_info(self):
         """Test CSV conversion with args and exception info."""
-        timestamp = datetime.now().timestamp()
+        timestamp = datetime.now(timezone.utc).timestamp()
         logs = [
             LogEntry(
                 id=1,
@@ -253,6 +265,9 @@ class TestLogsToCSV:
                 name="test.logger",
                 level=LogLevel.ERROR,
                 msg="Error with args",
+                pathname=None,
+                lineno=None,
+                func=None,
                 args=["arg1", "arg2", 123],
                 exc_info="Traceback (most recent call last):\n  File...",
                 extra_metadata=None

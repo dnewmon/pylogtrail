@@ -92,24 +92,32 @@ def test_logs_to_csv():
     print("Testing logs_to_csv...")
     
     # Create sample log entries
+    base_timestamp = datetime.now(timezone.utc).timestamp()
     logs = [
         LogEntry(
             id=1,
-            timestamp=datetime.now().timestamp(),
+            timestamp=base_timestamp,
             name="test.logger",
             level=LogLevel.INFO,
             msg="Test message 1",
             pathname="/path/to/file.py",
             lineno=42,
             func="test_function",
+            args=None,
+            exc_info=None,
             extra_metadata={"service": "web", "version": "1.0"}
         ),
         LogEntry(
             id=2,
-            timestamp=datetime.now().timestamp() + 1,
+            timestamp=base_timestamp + 1,
             name="test.logger",
             level=LogLevel.ERROR,
             msg="Test message 2",
+            pathname=None,
+            lineno=None,
+            func=None,
+            args=None,
+            exc_info=None,
             extra_metadata={"service": "api", "env": {"type": "prod"}}
         )
     ]
