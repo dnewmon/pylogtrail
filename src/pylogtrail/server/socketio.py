@@ -58,16 +58,40 @@ def handle_disconnect():
     logger.info(f"Client disconnected: {client_id}")
 
 
-def handle_get_initial_logs(*args, **kwargs):
-    """Handle request for initial log dump."""
+def handle_get_initial_logs(data=None):
+    """Handle request for initial log dump with optional filters."""
     client_id = request.sid
-    limit = request.args.get("limit", 1000, type=int)
+    
+    # Extract parameters from data or use defaults
+    if data is None:
+        data = {}
+    
+    limit = data.get("limit", 1000)
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
 
     with get_db_session() as session:
-        # Get recent logs
+        # Build query with optional date/time filters
+        query = session.query(LogEntry)
+        
+        # Apply time filters if provided
+        if start_time:
+            try:
+                start_timestamp = datetime.fromisoformat(start_time.replace('Z', '+00:00')).timestamp()
+                query = query.filter(LogEntry.timestamp >= start_timestamp)
+            except ValueError:
+                logger.warning(f"Invalid start_time format: {start_time}")
+        
+        if end_time:
+            try:
+                end_timestamp = datetime.fromisoformat(end_time.replace('Z', '+00:00')).timestamp()
+                query = query.filter(LogEntry.timestamp <= end_timestamp)
+            except ValueError:
+                logger.warning(f"Invalid end_time format: {end_time}")
+        
+        # Get logs ordered by timestamp descending and apply limit
         log_entries = (
-            session.query(LogEntry)
-            .order_by(LogEntry.timestamp.desc())
+            query.order_by(LogEntry.timestamp.desc())
             .limit(limit)
             .all()
         )

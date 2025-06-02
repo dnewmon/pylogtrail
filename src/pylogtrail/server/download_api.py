@@ -288,7 +288,9 @@ def upload_logs():
     """
     Upload logs from CSV file.
     
-    Expects multipart/form-data with 'file' field containing CSV.
+    Expects multipart/form-data with:
+    - 'file' field containing CSV
+    - 'investigation' field containing investigation name
     CSV should have columns matching LogEntry fields.
     
     Returns:
@@ -304,6 +306,13 @@ def upload_logs():
         
         if not file.filename.lower().endswith('.csv'):
             return jsonify({'error': 'File must be a CSV'}), 400
+        
+        # Get investigation name
+        investigation = request.form.get('investigation')
+        if not investigation or not investigation.strip():
+            return jsonify({'error': 'Investigation name is required'}), 400
+        
+        investigation = investigation.strip()
         
         # Read and parse CSV
         content = file.read().decode('utf-8')
@@ -353,6 +362,9 @@ def upload_logs():
                             else:
                                 metadata[meta_key] = value
                     
+                    # Add investigation metadata to every record
+                    metadata['investigation'] = investigation
+                    
                     # Create log entry
                     log_entry = LogEntry(
                         timestamp=timestamp,
@@ -364,7 +376,7 @@ def upload_logs():
                         args=args,
                         exc_info=exc_info,
                         func=func,
-                        extra_metadata=metadata if metadata else None
+                        extra_metadata=metadata
                     )
                     
                     session.add(log_entry)

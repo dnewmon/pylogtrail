@@ -6,10 +6,10 @@ export interface LogEntry {
     pathname?: string;
     lineno?: number;
     msg: string;
-    args?: any;  // JSON data
+    args?: unknown;  // JSON data
     exc_info?: string;
     func?: string;
-    extra_metadata?: any;  // JSON data
+    extra_metadata?: unknown;  // JSON data
     
-    [key: string]: any;  // Keep the index signature for any additional fields
+    [key: string]: unknown;  // Keep the index signature for any additional fields
 }

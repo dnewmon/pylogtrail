@@ -3,6 +3,7 @@ export interface LogEntry {
     level: string;
     name: string;
     message: string;
+    extra_metadata?: Record<string, unknown>;
 }
 
 export interface Filters {

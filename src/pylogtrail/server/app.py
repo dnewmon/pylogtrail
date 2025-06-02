@@ -204,7 +204,7 @@ def create_app(config: Optional[Dict[str, Any]] = None, udp_port: Optional[int] 
     app.register_blueprint(retention_bp)
 
     # Register download API blueprint
-    app.register_blueprint(download_bp)
+    app.register_blueprint(download_bp, url_prefix='/api')
 
     # Start UDP handler if port is specified
     if udp_port is not None:

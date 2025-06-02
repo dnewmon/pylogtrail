@@ -1,8 +1,14 @@
 import {io, Socket} from 'socket.io-client';
 import type { LogEntry } from './log_entry';
 
+export interface GetInitialLogsData {
+    limit: number;
+    start_time?: string;
+    end_time?: string;
+}
+
 interface WriteSocketEvents {
-    get_initial_logs: (limit: number) => void;
+    get_initial_logs: (data: GetInitialLogsData) => void;
 }
 
 export interface InitialLogsResponse {
@@ -35,8 +41,8 @@ export class SocketHandler {
         });
     }
 
-    get_initial_logs(limit: number) {
-        this.socket.emit("get_initial_logs", limit);
+    get_initial_logs(data: GetInitialLogsData) {
+        this.socket.emit("get_initial_logs", data);
     }
 
     on_connect(callback: () => void) {
