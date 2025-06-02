@@ -47,7 +47,6 @@ Issues = "https://github.com/yourusername/pylogtrail/issues"
 
 [project.scripts]
 pylogtrail-server = "pylogtrail.server.app:main"
-pylogtrail-retention = "pylogtrail.cli.retention:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pylogtrail"]

@@ -8,7 +8,6 @@ The PyLogTrail retention system automatically manages log data by cleaning up ol
 - **Count-based retention**: Keep only the most recent N log entries
 - **Export before deletion**: Automatically export deleted records to CSV files in ZIP archives
 - **REST API**: Manage retention settings via HTTP endpoints
-- **CLI tool**: Command-line interface for retention management
 - **Automatic cleanup**: Run cleanup on server startup and at scheduled intervals
 
 ## Configuration
@@ -103,36 +102,6 @@ Content-Type: application/json
 {
   "duration": "30d"
 }
-```
-
-## CLI Tool
-
-The `pylogtrail-retention` command provides a command-line interface:
-
-### Show Current Settings
-```bash
-pylogtrail-retention show
-```
-
-### Run Cleanup
-```bash
-# Actual cleanup
-pylogtrail-retention cleanup
-
-# Dry run (preview only)
-pylogtrail-retention cleanup --dry-run
-```
-
-### Update Settings
-```bash
-# Set time-based retention to 30 days
-pylogtrail-retention update --time-duration "30d" --time-enabled true
-
-# Set count-based retention to 5000 records
-pylogtrail-retention update --count-max 5000 --count-enabled true
-
-# Disable export
-pylogtrail-retention update --export-enabled false
 ```
 
 ## Export Format
