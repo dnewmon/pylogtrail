@@ -52,10 +52,15 @@ def test_retention_manager():
 def test_api_endpoints():
     """Test that API endpoints can be imported"""
     try:
+        from flask import Flask
         from pylogtrail.server.retention_api import retention_bp
         
+        # Create a temporary Flask app and register the blueprint to access routes
+        app = Flask(__name__)
+        app.register_blueprint(retention_bp)
+        
         # Check that the blueprint has the expected routes
-        rules = [rule.rule for rule in retention_bp.url_map.iter_rules()]
+        rules = [rule.rule for rule in app.url_map.iter_rules()]
         expected_routes = ['/api/retention/settings', '/api/retention/cleanup', '/api/retention/preview']
         
         for route in expected_routes:
