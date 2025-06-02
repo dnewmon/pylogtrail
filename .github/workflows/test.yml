@@ -38,4 +38,4 @@ jobs:
     
     - name: Run tests with pytest
       run: |
-        pytest tests/ --verbose --cov=backend/signa4 --cov-report=term-missing --cov-report=html
+        pytest tests/ --verbose --cov=src/pylogtrail --cov-report=term-missing --cov-report=html
