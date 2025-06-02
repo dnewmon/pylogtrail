@@ -1,6 +1,6 @@
 flask==3.0.2
 sqlalchemy==2.0.27
-pymysql==1.1.0
+pymysql==1.1.1
 cryptography==42.0.2  # Required for PyMySQL
 python-dotenv==1.0.1
 alembic==1.13.1  # For database migrations
