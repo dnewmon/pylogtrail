@@ -30,6 +30,7 @@ class ExportConfig:
 class ScheduleConfig:
     on_startup: bool
     interval_hours: int
+    last_execution: Optional[str] = None  # ISO format UTC timestamp
 
 
 @dataclass
@@ -84,7 +85,8 @@ class RetentionConfigManager:
         schedule_data = retention_data.get('schedule', {})
         schedule = ScheduleConfig(
             on_startup=schedule_data.get('on_startup', True),
-            interval_hours=schedule_data.get('interval_hours', 24)
+            interval_hours=schedule_data.get('interval_hours', 24),
+            last_execution=schedule_data.get('last_execution')
         )
         
         self._config = RetentionConfig(
@@ -116,7 +118,8 @@ class RetentionConfigManager:
                 },
                 'schedule': {
                     'on_startup': config.schedule.on_startup,
-                    'interval_hours': config.schedule.interval_hours
+                    'interval_hours': config.schedule.interval_hours,
+                    'last_execution': config.schedule.last_execution
                 }
             }
         }
@@ -135,6 +138,12 @@ class RetentionConfigManager:
             return self.load_config()
         return self._config
     
+    def update_last_execution(self, timestamp: str) -> None:
+        """Update the last execution timestamp and save to file"""
+        config = self.get_config()
+        config.schedule.last_execution = timestamp
+        self.save_config(config)
+    
     def _get_default_config(self) -> RetentionConfig:
         """Return default retention configuration"""
         return RetentionConfig(
@@ -146,7 +155,7 @@ class RetentionConfigManager:
                 output_directory='exports',
                 include_timestamp=True
             ),
-            schedule=ScheduleConfig(on_startup=True, interval_hours=24)
+            schedule=ScheduleConfig(on_startup=True, interval_hours=24, last_execution=None)
         )
     
     @staticmethod
