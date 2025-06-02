@@ -12,6 +12,7 @@ from pylogtrail.server.udp_handler import UDPLogHandler
 from pylogtrail.server.http_handler import create_log_endpoint
 from pylogtrail.server.socketio import init_socketio, broadcast_log
 from pylogtrail.server.retention_api import retention_bp
+from pylogtrail.server.download_api import download_bp
 from pylogtrail.retention.manager import RetentionManager
 from pylogtrail.config.retention import get_retention_config_manager
 
@@ -156,6 +157,9 @@ def create_app(config: Optional[Dict[str, Any]] = None, udp_port: Optional[int] 
     
     # Register retention API blueprint
     app.register_blueprint(retention_bp)
+    
+    # Register download API blueprint
+    app.register_blueprint(download_bp)
 
     # Start UDP handler if port is specified
     if udp_port is not None:
