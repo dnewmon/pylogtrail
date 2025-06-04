@@ -5,6 +5,30 @@ A dirt simple, centralized Python log trail server with real-time web UI.
 
 PyLogTrail is a lightweight log aggregation server that accepts Python log records via HTTP and UDP, stores them in a SQLite database, and provides a real-time web interface for viewing logs.
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Log Ingestion](#log-ingestion)
+  - [Python HTTP Handler](#python-http-handler)
+  - [Python UDP Handler](#python-udp-handler)
+  - [Generic Context Manager](#generic-context-manager)
+  - [Standard UDP Socket (Alternative)](#standard-udp-socket-alternative)
+- [Docker Deployment](#docker-deployment)
+  - [Quick Start with Docker](#quick-start-with-docker)
+  - [Docker Configuration](#docker-configuration)
+  - [Environment Variables](#environment-variables)
+  - [Ports](#ports)
+  - [Data Persistence](#data-persistence)
+  - [Container Health](#container-health)
+  - [First Run Setup](#first-run-setup)
+  - [Logs and Monitoring](#logs-and-monitoring)
+  - [Stopping the Container](#stopping-the-container)
+- [Native Installation](#native-installation)
+  - [Configuration](#configuration)
+- [Architecture](#architecture)
+
 ## Features
 
 - **Python HTTP Handler**: Built-in logging handler for seamless integration

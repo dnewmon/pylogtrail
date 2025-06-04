@@ -247,8 +247,8 @@ def main():
     parser.add_argument(
         "--udp-port",
         type=int,
-        default=None,
-        help="Port number for UDP log handler (optional, disabled if not specified)",
+        default=9999,
+        help="Port number for UDP log handler (default: 9999)",
     )
     args = parser.parse_args()
 
