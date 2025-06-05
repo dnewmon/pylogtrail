@@ -133,7 +133,7 @@ export default function LogTable({ logEntries, columns, filters }: TableProps) {
         return (
             <td 
                 key={column.key}
-                className={`px-3 text-nowrap ${!column.visible ? 'hidden' : ''} ${
+                className={`px-3 text-nowrap align-top text-sm ${!column.visible ? 'hidden' : ''} ${
                     column.key === 'message' ? 'w-full' : 'w-min'
                 }`}
             >
@@ -176,7 +176,7 @@ export default function LogTable({ logEntries, columns, filters }: TableProps) {
                         return (
                             <React.Fragment key={entryId}>
                                 <tr className="hover:bg-gray-100 border-t border-t-gray-200">
-                                    <td className="px-3 py-2 w-8">
+                                    <td className="px-3 py-2 w-8 align-top text-sm">
                                         <button
                                             onClick={() => toggleRowExpansion(entryId)}
                                             className="text-gray-500 hover:text-gray-700 focus:outline-none"

@@ -9,7 +9,7 @@ retention:
     output_directory: exports
   schedule:
     interval_hours: 24
-    last_execution: '2025-06-02T16:21:03.902022+00:00'
+    last_execution: '2025-06-05T19:38:35.129883+00:00'
     on_startup: true
   time_based:
     duration: 7d

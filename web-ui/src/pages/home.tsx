@@ -107,7 +107,7 @@ export default function HomePage() {
     // Sort logs by timestamp in descending order (newest first)
     const sortedLogs = useMemo(() => {
         return [...logEntries].sort((a, b) => 
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
         );
     }, [logEntries]);
 
