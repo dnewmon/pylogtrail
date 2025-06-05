@@ -112,75 +112,87 @@ export default function HomePage() {
     }, [logEntries]);
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Log Viewer</h1>
-                <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                        <label htmlFor="record-limit" className="text-sm font-medium text-gray-700">
-                            Show:
-                        </label>
-                        <select
-                            id="record-limit"
-                            value={recordLimit}
-                            onChange={(e) => setRecordLimit(parseInt(e.target.value))}
-                            className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                            <option value={100}>100 records</option>
-                            <option value={1000}>1,000 records</option>
-                            <option value={10000}>10,000 records</option>
-                        </select>
+        <div className="h-screen flex flex-col">
+            <div className="bg-white border-b border-gray-200">
+                <div className="container mx-auto px-4 py-4">
+                    <div className="flex items-center justify-between mb-4">
+                        <h1 className="text-2xl font-bold">Log Viewer</h1>
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                                <label htmlFor="record-limit" className="text-sm font-medium text-gray-700">
+                                    Show:
+                                </label>
+                                <select
+                                    id="record-limit"
+                                    value={recordLimit}
+                                    onChange={(e) => setRecordLimit(parseInt(e.target.value))}
+                                    className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                >
+                                    <option value={100}>100 records</option>
+                                    <option value={1000}>1,000 records</option>
+                                    <option value={10000}>10,000 records</option>
+                                </select>
+                            </div>
+                            {pendingLogs.length > 0 && (
+                                <span className="text-sm text-gray-600">
+                                    {pendingLogs.length} pending log{pendingLogs.length !== 1 ? 's' : ''}
+                                </span>
+                            )}
+                            <button
+                                onClick={() => setShowImportModal(true)}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                                </svg>
+                                <span>Import Logs</span>
+                            </button>
+                            <button
+                                onClick={togglePause}
+                                className={`px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                    isPaused 
+                                        ? 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500' 
+                                        : 'bg-yellow-600 hover:bg-yellow-700 text-white focus:ring-yellow-500'
+                                }`}
+                            >
+                                {isPaused ? (
+                                    <div className="flex items-center space-x-2">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                        <span>Resume</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center space-x-2">
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                                        </svg>
+                                        <span>Pause</span>
+                                    </div>
+                                )}
+                            </button>
+                        </div>
                     </div>
-                    {pendingLogs.length > 0 && (
-                        <span className="text-sm text-gray-600">
-                            {pendingLogs.length} pending log{pendingLogs.length !== 1 ? 's' : ''}
-                        </span>
-                    )}
-                    <button
-                        onClick={() => setShowImportModal(true)}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center space-x-2"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                        </svg>
-                        <span>Import Logs</span>
-                    </button>
-                    <button
-                        onClick={togglePause}
-                        className={`px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                            isPaused 
-                                ? 'bg-green-600 hover:bg-green-700 text-white focus:ring-green-500' 
-                                : 'bg-yellow-600 hover:bg-yellow-700 text-white focus:ring-yellow-500'
-                        }`}
-                    >
-                        {isPaused ? (
-                            <div className="flex items-center space-x-2">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M8 5v14l11-7z"/>
-                                </svg>
-                                <span>Resume</span>
-                            </div>
-                        ) : (
-                            <div className="flex items-center space-x-2">
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                                </svg>
-                                <span>Pause</span>
-                            </div>
-                        )}
-                    </button>
                 </div>
             </div>
-            <div className="bg-white rounded-lg shadow">
-                <FilterPanel 
-                    logEntries={logEntries}
-                    onFiltersChange={setFilters}
-                />
-                <LogTable 
-                    logEntries={sortedLogs}
-                    columns={columns}
-                    filters={filters}
-                />
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
+                <div className="container mx-auto px-4 py-2">
+                    <FilterPanel 
+                        logEntries={logEntries}
+                        onFiltersChange={setFilters}
+                    />
+                </div>
+            </div>
+            <div className="flex-1 overflow-auto">
+                <div className="container mx-auto px-4 h-full">
+                    <div className="bg-white rounded-lg shadow h-full">
+                        <LogTable 
+                            logEntries={sortedLogs}
+                            columns={columns}
+                            filters={filters}
+                        />
+                    </div>
+                </div>
             </div>
             {showImportModal && (
                 <ImportModal

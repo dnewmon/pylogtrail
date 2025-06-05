@@ -289,8 +289,21 @@ export function FilterPanel({ logEntries, onFiltersChange }: FilterPanelProps) {
                         {columns.filter(col => 
                             !col.key.toLowerCase().includes('time') && 
                             !col.key.toLowerCase().includes('date') && 
-                            col.key !== 'timestamp'
-                        ).map(column => (
+                            col.key !== 'timestamp' &&
+                            col.key !== 'thread' &&
+                            col.key !== 'process' &&
+                            col.key !== 'stack_info' &&
+                            col.key !== 'msecs' &&
+                            col.key !== 'threadName' &&
+                            col.key !== 'processName' &&
+                            col.key !== 'relativeCreated'
+                        ).filter(col => {
+                            const filter = filters[col.key];
+                            if (filter?.type === 'select' && filter.options) {
+                                return !(filter.options.length === 1 && filter.options[0] === 'None');
+                            }
+                            return true;
+                        }).map(column => (
                             <div key={column.key} className="flex flex-col">
                                 <label className="block text-sm font-medium text-gray-700">
                                     {column.label}
